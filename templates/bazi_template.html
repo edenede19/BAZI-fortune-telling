@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>八字命盘 · {{NAME}}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C8A96E;
+    --gold-light: #E8C97E;
+    --gold-dim: #8B7245;
+    --crimson: #9B2335;
+    --crimson-bright: #C42B3F;
+    --ink: #0A0A0F;
+    --ink-mid: #12121A;
+    --ink-light: #1C1C2A;
+    --ivory: #F2EBD9;
+    --ivory-dim: #B8AA90;
+    --teal: #3B7A85;
+    --teal-light: #5BA8B5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ink);
+    color: var(--ivory);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(60,40,100,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(40,20,60,0.4) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 0%, rgba(155,35,53,0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .header {
+    text-align: center;
+    padding: 60px 0 40px;
+    animation: fadeDown 1s ease both;
+  }
+
+  .header-eyebrow {
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .header-title {
+    font-family: 'Ma Shan Zheng', serif;
+    font-size: clamp(36px, 6vw, 58px);
+    color: var(--gold);
+    line-height: 1.2;
+    margin-bottom: 8px;
+    text-shadow: 0 0 40px rgba(200,169,110,0.3);
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--ivory-dim);
+    letter-spacing: 3px;
+    margin-top: 12px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 32px 0;
+    opacity: 0.4;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold));
+  }
+  .divider::after { background: linear-gradient(to left, transparent, var(--gold)); }
+  .divider span { font-size: 14px; color: var(--gold); }
+
+  .info-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(200,169,110,0.15);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 2px;
+    margin-bottom: 48px;
+    animation: fadeUp 1s 0.2s ease both;
+  }
+
+  .info-cell {
+    background: var(--ink-mid);
+    padding: 20px 16px;
+    text-align: center;
+  }
+
+  .info-cell-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--gold-dim);
+    margin-bottom: 8px;
+  }
+
+  .info-cell-value {
+    font-size: 16px;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(200,169,110,0.2);
+  }
+
+  /* 四柱排盘表 */
+  .pillars-table {
+    display: grid;
+    grid-template-columns: 80px repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(200,169,110,0.15);
+    border: 1px solid rgba(200,169,110,0.2);
+    margin-bottom: 48px;
+    animation: fadeUp 1s 0.3s ease both;
+  }
+
+  .pillars-header {
+    background: rgba(200,169,110,0.08);
+    padding: 14px 12px;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--gold-dim);
+  }
+
+  .pillars-row-label {
+    background: var(--ink-mid);
+    padding: 14px 12px;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--ivory-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pillars-cell {
+    background: var(--ink-mid);
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .pillars-cell .stem {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Ma Shan Zheng', serif;
+    line-height: 1.2;
+  }
+
+  .pillars-cell .branch {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Ma Shan Zheng', serif;
+    line-height: 1.2;
+  }
+
+  .pillars-cell .shishen {
+    font-size: 11px;
+    color: var(--crimson-bright);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .pillars-cell .canggan {
+    font-size: 10px;
+    color: var(--ivory-dim);
+    margin-top: 6px;
+    line-height: 1.8;
+  }
+
+  .pillars-cell.day-master {
+    background: rgba(155,35,53,0.1);
+    border: 1px solid rgba(155,35,53,0.3);
+    margin: -1px;
+    z-index: 2;
+  }
+
+  /* 五行力量图 */
+  .wuxing-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 24px;
+    height: 200px;
+    padding: 20px 40px;
+    background: var(--ink-mid);
+    border: 1px solid rgba(200,169,110,0.1);
+    margin-bottom: 48px;
+    animation: fadeUp 1s 0.4s ease both;
+  }
+
+  .wuxing-bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .wuxing-bar {
+    width: 100%;
+    max-width: 60px;
+    border-radius: 2px 2px 0 0;
+    transition: height 1s ease;
+    position: relative;
+  }
+
+  .wuxing-bar .bar-value {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .wuxing-label {
+    font-size: 13px;
+    color: var(--ivory);
+    font-weight: 600;
+  }
+
+  .wuxing-element {
+    font-size: 10px;
+    color: var(--ivory-dim);
+    letter-spacing: 1px;
+  }
+
+  /* 大运时间线 */
+  .dayun-timeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1px;
+    background: rgba(200,169,110,0.1);
+    border: 1px solid rgba(200,169,110,0.15);
+    margin-bottom: 48px;
+    animation: fadeUp 1s 0.5s ease both;
+  }
+
+  .dayun-cell {
+    background: var(--ink-mid);
+    padding: 16px 12px;
+    text-align: center;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  .dayun-cell:hover { background: var(--ink-light); }
+
+  .dayun-cell.current {
+    background: rgba(59,122,133,0.12);
+    border: 1px solid rgba(91,168,181,0.3);
+    margin: -1px;
+    z-index: 2;
+  }
+
+  .dayun-cell.next {
+    background: rgba(200,169,110,0.05);
+    border: 1px dashed rgba(200,169,110,0.2);
+    margin: -1px;
+    z-index: 2;
+  }
+
+  .dayun-range {
+    font-size: 10px;
+    color: var(--ivory-dim);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .dayun-ganzhi {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Ma Shan Zheng', serif;
+    line-height: 1.2;
+  }
+
+  .dayun-shishen {
+    font-size: 10px;
+    color: var(--crimson-bright);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .dayun-badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 1px;
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+  .badge-current { background: rgba(59,122,133,0.3); color: var(--teal-light); border: 1px solid rgba(59,122,133,0.5); }
+  .badge-next { background: rgba(200,169,110,0.15); color: var(--gold-dim); border: 1px solid rgba(200,169,110,0.3); }
+
+  /* 解读卡片 */
+  .reading-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+    animation: fadeUp 1s 0.6s ease both;
+  }
+
+  .reading-card {
+    background: var(--ink-mid);
+    border: 1px solid rgba(200,169,110,0.1);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reading-card::before {
+    content: attr(data-num);
+    position: absolute;
+    right: 16px;
+    top: 12px;
+    font-family: 'Ma Shan Zheng', serif;
+    font-size: 48px;
+    color: var(--gold);
+    opacity: 0.06;
+  }
+
+  .reading-card.full { grid-column: 1 / -1; }
+  .reading-card.highlight { border-color: rgba(155,35,53,0.3); background: rgba(155,35,53,0.05); }
+  .reading-card.teal-highlight { border-color: rgba(59,122,133,0.3); background: rgba(59,122,133,0.05); }
+
+  .card-title {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--gold-dim);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .card-stars-badge {
+    font-size: 18px;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .card-body {
+    font-size: 13.5px;
+    line-height: 2;
+    color: var(--ivory-dim);
+  }
+
+  .card-body strong { color: var(--ivory); font-weight: 600; }
+  .card-body em { color: var(--gold); font-style: normal; }
+  .card-body .warn { color: #FF8C60; }
+  .card-body .good { color: #7CCC60; }
+
+  .prob-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .prob-label { font-size: 11px; color: var(--ivory-dim); width: 80px; flex-shrink: 0; }
+  .prob-track {
+    flex: 1;
+    height: 3px;
+    background: rgba(200,169,110,0.1);
+    border-radius: 2px;
+  }
+  .prob-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--gold-dim), var(--gold));
+    border-radius: 2px;
+  }
+  .prob-pct { font-size: 12px; color: var(--gold); width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* 校准问答 */
+  .calibration {
+    border: 1px solid rgba(200,169,110,0.25);
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(200,169,110,0.03), rgba(59,122,133,0.05));
+    margin-bottom: 48px;
+    animation: fadeUp 1s 0.7s ease both;
+  }
+
+  .cal-title {
+    font-family: 'Ma Shan Zheng', serif;
+    font-size: 22px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .cal-desc {
+    font-size: 12px;
+    color: var(--ivory-dim);
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  .cal-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .cal-q {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .cal-num {
+    font-size: 18px;
+    color: rgba(200,169,110,0.3);
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 28px;
+    font-family: 'Ma Shan Zheng', serif;
+  }
+
+  .cal-text {
+    font-size: 14px;
+    color: var(--ivory);
+    line-height: 1.8;
+    padding-top: 2px;
+  }
+
+  .cal-text span {
+    font-size: 11px;
+    color: var(--ivory-dim);
+    display: block;
+    margin-top: 4px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 40px 0;
+    animation: fadeUp 1s 0.8s ease both;
+  }
+
+  .footer-quote {
+    font-family: 'Ma Shan Zheng', serif;
+    font-size: 18px;
+    color: rgba(200,169,110,0.4);
+    letter-spacing: 4px;
+    line-height: 2;
+  }
+
+  .footer-note {
+    font-size: 11px;
+    color: rgba(200,169,110,0.2);
+    margin-top: 12px;
+    letter-spacing: 2px;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 620px) {
+    .reading-grid { grid-template-columns: 1fr; }
+    .info-bar { grid-template-columns: 1fr 1fr; }
+    .pillars-table { grid-template-columns: 60px repeat(4, 1fr); }
+    .pillars-cell .stem, .pillars-cell .branch { font-size: 22px; }
+    .dayun-timeline { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+    .wuxing-chart { gap: 12px; padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">四柱八字 · 命理分析</div>
+    <div class="header-title">八字命盘</div>
+    <div class="header-sub">{{NAME}} · {{GENDER}}命 · {{LUNAR_DATE}}</div>
+  </div>
+
+  <!-- INFO BAR -->
+  <div class="info-bar">
+    <div class="info-cell">
+      <div class="info-cell-label">日 主</div>
+      <div class="info-cell-value">{{DAY_MASTER}}</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">格 局</div>
+      <div class="info-cell-value">{{GEJU}}</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">强 弱</div>
+      <div class="info-cell-value">{{RIQIANG}}</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">喜 用</div>
+      <div class="info-cell-value">{{XIYONG}}</div>
+    </div>
+  </div>
+
+  <!-- 四柱排盘表 -->
+  <div class="section-title">四柱排盘</div>
+  <div class="pillars-table">
+    <div class="pillars-header"></div>
+    <div class="pillars-header">年 柱</div>
+    <div class="pillars-header">月 柱</div>
+    <div class="pillars-header">日 柱</div>
+    <div class="pillars-header">时 柱</div>
+
+    <div class="pillars-row-label">天 干</div>
+    {{PILLAR_STEMS}}
+
+    <div class="pillars-row-label">地 支</div>
+    {{PILLAR_BRANCHES}}
+
+    <div class="pillars-row-label">十 神</div>
+    {{PILLAR_SHISHEN}}
+
+    <div class="pillars-row-label">藏 干</div>
+    {{PILLAR_CANGGAN}}
+  </div>
+
+  <!-- 五行力量图 -->
+  <div class="section-title">五行力量分布</div>
+  <div class="wuxing-chart">
+    {{WUXING_BARS}}
+  </div>
+
+  <!-- 大运时间线 -->
+  <div class="section-title">大运排列</div>
+  <div class="dayun-timeline">
+    {{DAYUN_CELLS}}
+  </div>
+
+  <!-- 解读卡片 -->
+  <div class="section-title">命盘解读</div>
+  <div class="reading-grid">
+    {{READING_CARDS}}
+  </div>
+
+  <!-- 校准问答 -->
+  <div class="calibration">
+    <div class="cal-title">校准问答</div>
+    <div class="cal-desc">当前盘准确度约 65-75%。以下问题的反馈可以把它推到 85% 以上。</div>
+    <div class="cal-questions">
+      {{CALIBRATION_QUESTIONS}}
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-quote">命盘显示可能性<br>行动决定现实</div>
+    <div class="footer-note">命理分析仅供参考 · 人生在于自身的努力和选择</div>
+  </div>
+
+</div>
+</body>
+</html>
